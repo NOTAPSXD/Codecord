@@ -39,6 +39,8 @@ try:
     # Test the connection
     mongo.db.command('ping')
     print("Successfully connected to MongoDB Atlas!")
+    # Create admin user if not exists
+    create_admin_user()
 except ConnectionFailure as e:
     print("Could not connect to MongoDB Atlas. Please check your connection string and credentials.")
     print(f"Error: {e}")
@@ -51,6 +53,7 @@ login_manager.login_view = 'login'
 
 class User(UserMixin):
     def __init__(self, user_data):
+        print(f"Initializing User with data: {user_data}")
         self.id = str(user_data['_id'])
         self.username = user_data['username']
         self.email = user_data['email']
@@ -58,21 +61,37 @@ class User(UserMixin):
         self.profile_pic = user_data.get('profile_pic')
         self.role = user_data.get('role', 'user')
         self.created_at = user_data.get('created_at', datetime.utcnow())
+        print(f"User initialized: {self.username} with role {self.role}")
 
     @staticmethod
     def get(user_id):
+        print(f"Getting user by ID: {user_id}")
         user_data = mongo.db.users.find_one({'_id': ObjectId(user_id)})
-        return User(user_data) if user_data else None
+        if user_data:
+            print(f"Found user: {user_data['username']}")
+            return User(user_data)
+        print("User not found")
+        return None
 
     @staticmethod
     def get_by_username(username):
+        print(f"Getting user by username: {username}")
         user_data = mongo.db.users.find_one({'username': username})
-        return User(user_data) if user_data else None
+        if user_data:
+            print(f"Found user: {user_data['username']}")
+            return User(user_data)
+        print("User not found")
+        return None
 
     @staticmethod
     def get_by_email(email):
+        print(f"Getting user by email: {email}")
         user_data = mongo.db.users.find_one({'email': email})
-        return User(user_data) if user_data else None
+        if user_data:
+            print(f"Found user: {user_data['username']}")
+            return User(user_data)
+        print("User not found")
+        return None
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -90,11 +109,15 @@ def register():
         email = request.form.get('email')
         password = request.form.get('password')
 
+        print(f"Attempting to register user: {username} with email: {email}")
+
         if mongo.db.users.find_one({'username': username}):
+            print(f"Username {username} already exists")
             flash('Username already exists')
             return redirect(url_for('register'))
 
         if mongo.db.users.find_one({'email': email}):
+            print(f"Email {email} already registered")
             flash('Email already registered')
             return redirect(url_for('register'))
 
@@ -106,7 +129,8 @@ def register():
             'created_at': datetime.utcnow()
         }
 
-        mongo.db.users.insert_one(user_data)
+        result = mongo.db.users.insert_one(user_data)
+        print(f"User registered successfully with ID: {result.inserted_id}")
         flash('Registration successful!')
         return redirect(url_for('login'))
 
@@ -115,16 +139,33 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
+        email = request.form.get('email')
         password = request.form.get('password')
 
-        user_data = mongo.db.users.find_one({'username': username})
-        if user_data and check_password_hash(user_data['password_hash'], password):
-            user = User(user_data)
-            login_user(user)
-            return redirect(url_for('index'))
+        print(f"Login attempt for: {email}")
 
-        flash('Invalid username or password')
+        # Try to find user by email
+        user_data = mongo.db.users.find_one({'email': email})
+        print(f"User found by email: {user_data is not None}")
+        
+        # If not found by email, try username
+        if not user_data:
+            user_data = mongo.db.users.find_one({'username': email})
+            print(f"User found by username: {user_data is not None}")
+
+        if user_data:
+            print("User found, checking password")
+            if check_password_hash(user_data['password_hash'], password):
+                print("Password correct, logging in user")
+                user = User(user_data)
+                login_user(user)
+                return redirect(url_for('index'))
+            else:
+                print("Password incorrect")
+        else:
+            print("No user found with provided credentials")
+
+        flash('Invalid email or password')
 
     return render_template('login.html')
 
@@ -200,10 +241,10 @@ def handle_leave_voice(data):
         'room': room
     }, room=room)
 
-# Create default admin user if none exists
-def create_default_admin():
-    admin = mongo.db.users.find_one({'role': 'admin'})
-    if not admin:
+# Add this function to create admin user if not exists
+def create_admin_user():
+    admin_exists = mongo.db.users.find_one({'role': 'admin'})
+    if not admin_exists:
         admin_data = {
             'username': ADMIN_USERNAME,
             'email': ADMIN_EMAIL,
@@ -212,13 +253,9 @@ def create_default_admin():
             'created_at': datetime.utcnow()
         }
         mongo.db.users.insert_one(admin_data)
-        print('Default admin user created!')
-        print(f'Username: {ADMIN_USERNAME}')
-        print(f'Password: {ADMIN_PASSWORD}')
-        print(f'Email: {ADMIN_EMAIL}')
+        print("Admin user created successfully!")
 
 # Main entry
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    create_default_admin()  # Create default admin if none
     socketio.run(app, host="0.0.0.0", port=port)
