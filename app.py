@@ -7,22 +7,32 @@ from werkzeug.utils import secure_filename
 import os
 from datetime import datetime
 import json
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Create necessary directories
+os.makedirs('db', exist_ok=True)
+os.makedirs('static/uploads/projects', exist_ok=True)
+os.makedirs('static/uploads/profiles', exist_ok=True)
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///codexverse.db'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///db/codexverse.db')
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Admin configuration
+ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin123')
+ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@codexverse.com')
 
 db = SQLAlchemy(app)
 socketio = SocketIO(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
-
-# Ensure upload directories exist
-os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'projects'), exist_ok=True)
-os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'profiles'), exist_ok=True)
 
 # Database Models
 class User(UserMixin, db.Model):
@@ -183,8 +193,28 @@ def handle_leave_voice(data):
         'room': room
     }, room=room)
 
+# Create default admin user if none exists
+def create_default_admin():
+    with app.app_context():
+        admin = User.query.filter_by(role='admin').first()
+        if not admin:
+            admin = User(
+                username=ADMIN_USERNAME,
+                email=ADMIN_EMAIL,
+                password_hash=generate_password_hash(ADMIN_PASSWORD),
+                role='admin'
+            )
+            db.session.add(admin)
+            db.session.commit()
+            print('Default admin user created!')
+            print(f'Username: {ADMIN_USERNAME}')
+            print(f'Password: {ADMIN_PASSWORD}')
+            print(f'Email: {ADMIN_EMAIL}')
+
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 10000))
+    # Create default admin user
+    create_default_admin()
     # For Render, bind to 0.0.0.0 and use the PORT env var
     socketio.run(app, host="0.0.0.0", port=port) 
