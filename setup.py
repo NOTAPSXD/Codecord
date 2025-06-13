@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -219,3 +220,31 @@ if __name__ == "__main__":
         create_default_admin()  # Create default admin if none
 
     socketio.run(app, host="0.0.0.0", port=port)
+=======
+from setuptools import setup, find_packages
+
+setup(
+    name="codexverse",
+    version="1.0.0",
+    packages=find_packages(),
+    install_requires=[
+        'Flask==2.3.3',
+        'Flask-SQLAlchemy==3.1.1',
+        'Flask-Login==0.6.2',
+        'Flask-SocketIO==5.3.6',
+        'Flask-WTF==1.2.1',
+        'Pillow==10.0.0',
+        'python-dotenv==1.0.0',
+        'Werkzeug==2.3.7',
+        'eventlet==0.33.3',
+        'gunicorn==21.2.0',
+        'Flask-Migrate==4.0.5',
+        'Flask-Admin==1.6.1',
+        'Flask-Mail==0.9.1',
+        'Flask-CORS==4.0.0',
+        'python-jose==3.3.0',
+        'bcrypt==4.0.1'
+    ],
+    python_requires='>=3.8',
+) 
+>>>>>>> 811b9e70f9e4fe1d85b01eca33aa982fe5b5000f

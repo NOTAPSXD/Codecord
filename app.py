@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -8,6 +7,10 @@ import os
 from datetime import datetime
 import json
 from dotenv import load_dotenv
+from flask_pymongo import PyMongo
+from bson.objectid import ObjectId
+from pymongo.errors import ConnectionFailure
+from urllib.parse import quote_plus
 
 # Load environment variables
 load_dotenv()
@@ -19,7 +22,10 @@ os.makedirs('static/uploads/profiles', exist_ok=True)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///db/codexverse.db')
+
+# MongoDB Atlas connection string
+app.config['MONGO_URI'] = "mongodb+srv://notaps:codex@codex.jyhkgq5.mongodb.net/codexverse?retryWrites=true&w=majority"
+
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
@@ -28,56 +34,49 @@ ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin123')
 ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@codexverse.com')
 
-db = SQLAlchemy(app)
+try:
+    mongo = PyMongo(app)
+    # Test the connection
+    mongo.db.command('ping')
+    print("Successfully connected to MongoDB Atlas!")
+except ConnectionFailure as e:
+    print("Could not connect to MongoDB Atlas. Please check your connection string and credentials.")
+    print(f"Error: {e}")
+    exit(1)
+
 socketio = SocketIO(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# Database Models
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128))
-    profile_pic = db.Column(db.String(200))
-    role = db.Column(db.String(20), default='user')  # user, staff, admin
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    tickets = db.relationship('Ticket', backref='user', lazy=True)
+class User(UserMixin):
+    def __init__(self, user_data):
+        self.id = str(user_data['_id'])
+        self.username = user_data['username']
+        self.email = user_data['email']
+        self.password_hash = user_data['password_hash']
+        self.profile_pic = user_data.get('profile_pic')
+        self.role = user_data.get('role', 'user')
+        self.created_at = user_data.get('created_at', datetime.utcnow())
 
-class Project(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    thumbnail = db.Column(db.String(200))
-    download_link = db.Column(db.String(200))
-    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    @staticmethod
+    def get(user_id):
+        user_data = mongo.db.users.find_one({'_id': ObjectId(user_id)})
+        return User(user_data) if user_data else None
 
-class Category(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), nullable=False)
-    projects = db.relationship('Project', backref='category', lazy=True)
+    @staticmethod
+    def get_by_username(username):
+        user_data = mongo.db.users.find_one({'username': username})
+        return User(user_data) if user_data else None
 
-class Ticket(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    status = db.Column(db.String(20), default='open')
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    messages = db.relationship('TicketMessage', backref='ticket', lazy=True)
-
-class TicketMessage(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.Text, nullable=False)
-    ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    @staticmethod
+    def get_by_email(email):
+        user_data = mongo.db.users.find_one({'email': email})
+        return User(user_data) if user_data else None
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return User.get(user_id)
 
 # Routes
 @app.route('/')
@@ -91,23 +90,23 @@ def register():
         email = request.form.get('email')
         password = request.form.get('password')
 
-        if User.query.filter_by(username=username).first():
+        if mongo.db.users.find_one({'username': username}):
             flash('Username already exists')
             return redirect(url_for('register'))
 
-        if User.query.filter_by(email=email).first():
+        if mongo.db.users.find_one({'email': email}):
             flash('Email already registered')
             return redirect(url_for('register'))
 
-        user = User(
-            username=username,
-            email=email,
-            password_hash=generate_password_hash(password)
-        )
+        user_data = {
+            'username': username,
+            'email': email,
+            'password_hash': generate_password_hash(password),
+            'role': 'user',
+            'created_at': datetime.utcnow()
+        }
 
-        db.session.add(user)
-        db.session.commit()
-
+        mongo.db.users.insert_one(user_data)
         flash('Registration successful!')
         return redirect(url_for('login'))
 
@@ -119,9 +118,9 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
 
-        user = User.query.filter_by(username=username).first()
-
-        if user and check_password_hash(user.password_hash, password):
+        user_data = mongo.db.users.find_one({'username': username})
+        if user_data and check_password_hash(user_data['password_hash'], password):
+            user = User(user_data)
             login_user(user)
             return redirect(url_for('index'))
 
@@ -147,18 +146,20 @@ def voice():
 
 @app.route('/projects')
 def projects():
-    categories = Category.query.all()
+    categories = list(mongo.db.categories.find())
     return render_template('projects.html', categories=categories)
 
-@app.route('/project/<int:project_id>')
+@app.route('/project/<project_id>')
 def project_detail(project_id):
-    project = Project.query.get_or_404(project_id)
+    project = mongo.db.projects.find_one({'_id': ObjectId(project_id)})
+    if not project:
+        return redirect(url_for('projects'))
     return render_template('project_detail.html', project=project)
 
 @app.route('/tickets')
 @login_required
 def tickets():
-    user_tickets = Ticket.query.filter_by(user_id=current_user.id).all()
+    user_tickets = list(mongo.db.tickets.find({'user_id': current_user.id}))
     return render_template('tickets.html', tickets=user_tickets)
 
 # Socket.IO events
@@ -169,6 +170,12 @@ def handle_connect():
 
 @socketio.on('message')
 def handle_message(data):
+    message_data = {
+        'user': current_user.username,
+        'message': data['message'],
+        'timestamp': datetime.utcnow()
+    }
+    mongo.db.messages.insert_one(message_data)
     emit('message', {
         'user': current_user.username,
         'message': data['message'],
@@ -195,16 +202,16 @@ def handle_leave_voice(data):
 
 # Create default admin user if none exists
 def create_default_admin():
-    admin = User.query.filter_by(role='admin').first()
+    admin = mongo.db.users.find_one({'role': 'admin'})
     if not admin:
-        admin = User(
-            username=ADMIN_USERNAME,
-            email=ADMIN_EMAIL,
-            password_hash=generate_password_hash(ADMIN_PASSWORD),
-            role='admin'
-        )
-        db.session.add(admin)
-        db.session.commit()
+        admin_data = {
+            'username': ADMIN_USERNAME,
+            'email': ADMIN_EMAIL,
+            'password_hash': generate_password_hash(ADMIN_PASSWORD),
+            'role': 'admin',
+            'created_at': datetime.utcnow()
+        }
+        mongo.db.users.insert_one(admin_data)
         print('Default admin user created!')
         print(f'Username: {ADMIN_USERNAME}')
         print(f'Password: {ADMIN_PASSWORD}')
@@ -213,9 +220,5 @@ def create_default_admin():
 # Main entry
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-
-    with app.app_context():
-        db.create_all()         # Create tables if not already created
-        create_default_admin()  # Create default admin if none
-
+    create_default_admin()  # Create default admin if none
     socketio.run(app, host="0.0.0.0", port=port)
