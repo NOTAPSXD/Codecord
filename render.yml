@@ -6,7 +6,7 @@ services:
     name: codecord
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
+    startCommand: gunicorn app:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -21,6 +21,6 @@ services:
       - key: ADMIN_USERNAME
         value: admin
       - key: ADMIN_PASSWORD
-        generateValue: true
+        value: admin123
       - key: ADMIN_EMAIL
         value: admin@codexverse.com
