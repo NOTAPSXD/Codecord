@@ -8,14 +8,14 @@
         <div class="col-md-6">
             <div class="card mt-5">
                 <div class="card-body p-5">
-                    <h2 class="text-center mb-4">Login</h2>
+                    <h2 class="text-center mb-4" style="color: var(--text-color);">Login</h2>
                     <form method="POST" action="{{ url_for('login') }}">
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
+                            <label for="email" class="form-label" style="color: var(--text-color);">Email</label>
                             <input type="email" class="form-control" id="email" name="email" required>
                         </div>
                         <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
+                            <label for="password" class="form-label" style="color: var(--text-color);">Password</label>
                             <input type="password" class="form-control" id="password" name="password" required>
                         </div>
                         <div class="d-grid gap-2">
@@ -23,7 +23,7 @@
                         </div>
                     </form>
                     <div class="text-center mt-3">
-                        <p>Don't have an account? <a href="{{ url_for('register') }}" class="text-decoration-none">Register here</a></p>
+                        <p style="color: var(--text-color);">Don't have an account? <a href="{{ url_for('register') }}" class="text-decoration-none">Register here</a></p>
                     </div>
                 </div>
             </div>

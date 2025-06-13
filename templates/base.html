@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code X Verse - {% block title %}{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #FF3333;
+            --primary-hover: #FF5555;
+            --background-dark: #1A1A1A;
+            --background-darker: #0D0D0D;
+            --text-color: #FFFFFF;
+            --text-muted: #AAAAAA;
+            --accent-color: #FF3333;
+            --card-bg: #262626;
+            --glow-color: rgba(255, 51, 51, 0.5);
+        }
+
+        body {
+            background-color: var(--background-dark);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.3s ease;
+        }
+
+        .navbar {
+            background-color: var(--background-darker);
+            box-shadow: 0 2px 15px rgba(255, 51, 51, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .navbar-brand {
+            color: var(--primary-color) !important;
+            font-weight: bold;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--glow-color);
+        }
+
+        .nav-link {
+            color: var(--text-color) !important;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background-color: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-color) !important;
+            transform: translateY(-2px);
+            text-shadow: 0 0 8px var(--glow-color);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid rgba(255, 51, 51, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 8px 25px var(--glow-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                120deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            transition: 0.5s;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px var(--glow-color);
+        }
+
+        .form-control {
+            background-color: var(--background-darker);
+            border: 1px solid rgba(255, 51, 51, 0.2);
+            color: var(--text-color);
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            background-color: var(--background-darker);
+            border-color: var(--primary-color);
+            color: var(--text-color);
+            box-shadow: 0 0 0 0.25rem rgba(255, 51, 51, 0.25);
+        }
+
+        .form-label {
+            color: var(--text-color);
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .text-decoration-none {
+            color: var(--primary-color) !important;
+        }
+
+        .text-decoration-none:hover {
+            color: var(--primary-hover) !important;
+            text-shadow: 0 0 8px var(--glow-color);
+        }
+
+        .glow {
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 5px var(--primary-color),
+                           0 0 10px var(--primary-color),
+                           0 0 15px var(--primary-color);
+            }
+            to {
+                box-shadow: 0 0 10px var(--primary-color),
+                           0 0 20px var(--primary-color),
+                           0 0 30px var(--primary-color);
+            }
+        }
+
+        .hover-glow:hover {
+            animation: glow 1s ease-in-out infinite alternate;
+        }
+
+        .chat-container {
+            height: 500px;
+            overflow-y: auto;
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 51, 51, 0.1);
+        }
+
+        .message {
+            background-color: var(--background-darker);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s ease-in-out;
+            border-left: 3px solid var(--primary-color);
+        }
+
+        @keyframes fadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(10px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        .voice-room {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: all 0.4s ease;
+            border: 1px solid rgba(255, 51, 51, 0.1);
+        }
+
+        .voice-room:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px var(--glow-color);
+            border-color: var(--primary-color);
+        }
+
+        .project-card {
+            position: relative;
+            overflow: hidden;
+            border-radius: 15px;
+        }
+
+        .project-card img {
+            transition: all 0.5s ease;
+        }
+
+        .project-card:hover img {
+            transform: scale(1.1);
+            filter: brightness(0.8);
+        }
+
+        .project-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+            padding: 25px;
+            transform: translateY(100%);
+            transition: all 0.4s ease;
+        }
+
+        .project-card:hover .project-overlay {
+            transform: translateY(0);
+        }
+
+        .ticket {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .ticket:hover {
+            transform: translateX(5px);
+            box-shadow: 0 0 20px var(--glow-color);
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .status-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px var(--glow-color);
+        }
+
+        .status-open { background-color: #43B581; }
+        .status-in-progress { background-color: #FAA61A; }
+        .status-closed { background-color: #F04747; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--background-darker);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-hover);
+        }
+
+        /* Alert Styling */
+        .alert {
+            background-color: var(--card-bg);
+            border: 1px solid var(--primary-color);
+            color: var(--text-color);
+            border-radius: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand glow" href="{{ url_for('index') }}">Code X Verse</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('projects') }}">Projects</a>
+                    </li>
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('chat') }}">Chat</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('voice') }}">Voice</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('tickets') }}">Tickets</a>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.role == 'admin' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin.admin_dashboard') }}">Admin Panel</a>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-info alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
