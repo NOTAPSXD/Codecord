@@ -217,6 +217,14 @@ def tickets():
     user_tickets = list(mongo.db.tickets.find({'user_id': current_user.id}))
     return render_template('tickets.html', tickets=user_tickets)
 
+@app.route('/admin/dashboard')
+@login_required
+def admin_dashboard():
+    if current_user.role != 'admin':
+        flash('You do not have permission to access the admin dashboard.')
+        return redirect(url_for('index'))
+    return render_template('admin_dashboard.html')
+
 # Socket.IO events
 @socketio.on('connect')
 def handle_connect():
