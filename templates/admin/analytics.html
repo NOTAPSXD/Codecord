@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Analytics Dashboard</h1>
+    </div>
+</div>
+
+<!-- Time Period Selector -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary" onclick="updateCharts('day')">24 Hours</button>
+                    <button class="btn btn-primary" onclick="updateCharts('week')">7 Days</button>
+                    <button class="btn btn-primary" onclick="updateCharts('month')">30 Days</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Activity Chart -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">User Activity</h5>
+                <canvas id="userActivityChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Platform Stats -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Platform Usage</h5>
+                <canvas id="platformUsageChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">User Distribution</h5>
+                <canvas id="userDistributionChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Stats -->
+<div class="row">
+    <div class="col-md-4">
+        <div class="card hover-glow">
+            <div class="card-body">
+                <h5 class="card-title">Chat Statistics</h5>
+                <ul class="list-unstyled">
+                    <li>Total Messages: {{ chat_stats.total_messages }}</li>
+                    <li>Active Chats: {{ chat_stats.active_chats }}</li>
+                    <li>Avg. Messages/Hour: {{ chat_stats.avg_messages_per_hour }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card hover-glow">
+            <div class="card-body">
+                <h5 class="card-title">Voice Statistics</h5>
+                <ul class="list-unstyled">
+                    <li>Total Sessions: {{ voice_stats.total_sessions }}</li>
+                    <li>Active Rooms: {{ voice_stats.active_rooms }}</li>
+                    <li>Avg. Session Duration: {{ voice_stats.avg_session_duration }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card hover-glow">
+            <div class="card-body">
+                <h5 class="card-title">Project Statistics</h5>
+                <ul class="list-unstyled">
+                    <li>Total Downloads: {{ project_stats.total_downloads }}</li>
+                    <li>Active Projects: {{ project_stats.active_projects }}</li>
+                    <li>Avg. Downloads/Day: {{ project_stats.avg_downloads_per_day }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+<script>
+    // Chart configurations
+    const userActivityChart = new Chart(
+        document.getElementById('userActivityChart'),
+        {
+            type: 'line',
+            data: {
+                labels: JSON.parse('{{ user_activity.labels|tojson|safe }}'),
+                datasets: [{
+                    label: 'Active Users',
+                    data: JSON.parse('{{ user_activity.data|tojson|safe }}'),
+                    borderColor: '#dc3545',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        }
+    );
+
+    const platformUsageChart = new Chart(
+        document.getElementById('platformUsageChart'),
+        {
+            type: 'doughnut',
+            data: {
+                labels: JSON.parse('{{ platform_usage.labels|tojson|safe }}'),
+                datasets: [{
+                    data: JSON.parse('{{ platform_usage.data|tojson|safe }}'),
+                    backgroundColor: ['#dc3545', '#0d6efd', '#198754']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        }
+    );
+
+    const userDistributionChart = new Chart(
+        document.getElementById('userDistributionChart'),
+        {
+            type: 'bar',
+            data: {
+                labels: JSON.parse('{{ user_distribution.labels|tojson|safe }}'),
+                datasets: [{
+                    label: 'Users',
+                    data: JSON.parse('{{ user_distribution.data|tojson|safe }}'),
+                    backgroundColor: '#dc3545'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        }
+    );
+
+    // Update charts based on time period
+    function updateCharts(period) {
+        fetch(`/admin/analytics/data?period=${period}`)
+            .then(response => response.json())
+            .then(data => {
+                // Update user activity chart
+                userActivityChart.data.labels = data.user_activity.labels;
+                userActivityChart.data.datasets[0].data = data.user_activity.data;
+                userActivityChart.update();
+
+                // Update platform usage chart
+                platformUsageChart.data.labels = data.platform_usage.labels;
+                platformUsageChart.data.datasets[0].data = data.platform_usage.data;
+                platformUsageChart.update();
+
+                // Update user distribution chart
+                userDistributionChart.data.labels = data.user_distribution.labels;
+                userDistributionChart.data.datasets[0].data = data.user_distribution.data;
+                userDistributionChart.update();
+            });
+    }
+</script>
+{% endblock %} 

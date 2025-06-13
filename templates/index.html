@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="row align-items-center min-vh-75">
+    <div class="col-md-6">
+        <h1 class="display-4 mb-4 glow">Welcome to Code X Verse</h1>
+        <p class="lead mb-4">Your ultimate destination for coding projects, real-time collaboration, and community interaction.</p>
+        <div class="d-grid gap-3 d-md-flex">
+            {% if not current_user.is_authenticated %}
+            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg hover-glow">Get Started</a>
+            <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg">Login</a>
+            {% else %}
+            <a href="{{ url_for('projects') }}" class="btn btn-primary btn-lg hover-glow">Browse Projects</a>
+            <a href="{{ url_for('chat') }}" class="btn btn-outline-light btn-lg">Join Chat</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card project-card">
+            <img src="{{ url_for('static', filename='images/hero-image.jpg') }}" class="card-img-top" alt="Code X Verse">
+            <div class="project-overlay">
+                <h3 class="text-white">Join Our Community</h3>
+                <p class="text-white">Connect with developers, share projects, and grow together.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">Features</h2>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card h-100 hover-glow">
+            <div class="card-body">
+                <i class="fas fa-code fa-3x mb-3 text-primary"></i>
+                <h3 class="card-title">Projects</h3>
+                <p class="card-text">Browse and download amazing coding projects. Share your own creations with the community.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 hover-glow">
+            <div class="card-body">
+                <i class="fas fa-comments fa-3x mb-3 text-primary"></i>
+                <h3 class="card-title">Real-time Chat</h3>
+                <p class="card-text">Connect with other developers in real-time. Share ideas and get instant feedback.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 hover-glow">
+            <div class="card-body">
+                <i class="fas fa-headset fa-3x mb-3 text-primary"></i>
+                <h3 class="card-title">Voice Rooms</h3>
+                <p class="card-text">Join voice channels for live discussions, coding sessions, and team meetings.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <h2 class="text-center mb-4">Latest Projects</h2>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% for project in latest_projects %}
+    <div class="col-md-4">
+        <div class="card project-card">
+            <img src="{{ url_for('static', filename=project.thumbnail) }}" class="card-img-top" alt="{{ project.title }}">
+            <div class="project-overlay">
+                <h3 class="text-white">{{ project.title }}</h3>
+                <p class="text-white">{{ project.description[:100] }}...</p>
+                <a href="{{ url_for('project_detail', project_id=project.id) }}" class="btn btn-primary">View Project</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="row mt-5">
+    <div class="col-12 text-center">
+        <h2 class="mb-4">Join Our Community</h2>
+        <p class="lead mb-4">Connect with developers, share your projects, and grow together.</p>
+        {% if not current_user.is_authenticated %}
+        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg hover-glow">Get Started Now</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add smooth scrolling
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            document.querySelector(this.getAttribute('href')).scrollIntoView({
+                behavior: 'smooth'
+            });
+        });
+    });
+
+    // Add animation on scroll
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('fade-in');
+            }
+        });
+    });
+
+    document.querySelectorAll('.card').forEach((el) => observer.observe(el));
+</script>
+{% endblock %} 

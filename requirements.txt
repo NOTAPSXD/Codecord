@@ -1,0 +1,17 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-SocketIO
+Flask-WTF
+Pillow
+python-dotenv
+Werkzeug
+eventlet
+SQLAlchemy
+gunicorn
+Flask-Migrate
+Flask-Admin
+Flask-Mail
+Flask-CORS
+python-jose
+bcrypt

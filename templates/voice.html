@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Voice Chat{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">Voice Chat Rooms</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="voice-rooms">
+                        <!-- Voice rooms will be dynamically added here -->
+                    </div>
+                    <div class="mt-4">
+                        <button class="btn btn-primary" id="create-room">
+                            <i class="fas fa-plus"></i> Create New Room
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Voice Room Modal -->
+<div class="modal fade" id="voiceRoomModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Voice Chat Room</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="voice-room-participants mb-3">
+                    <!-- Participants will be dynamically added here -->
+                </div>
+                <div class="voice-controls">
+                    <button class="btn btn-danger" id="mute-btn">
+                        <i class="fas fa-microphone-slash"></i> Mute
+                    </button>
+                    <button class="btn btn-danger" id="leave-btn">
+                        <i class="fas fa-sign-out-alt"></i> Leave Room
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const socket = io();
+        const voiceRooms = document.getElementById('voice-rooms');
+        const createRoomBtn = document.getElementById('create-room');
+        const voiceRoomModal = new bootstrap.Modal(document.getElementById('voiceRoomModal'));
+
+        // Handle create room button
+        createRoomBtn.addEventListener('click', function() {
+            socket.emit('create_voice_room', {
+                username: '{{ current_user.username }}'
+            });
+        });
+
+        // Handle incoming voice rooms
+        socket.on('voice_rooms', function(rooms) {
+            voiceRooms.innerHTML = '';
+            rooms.forEach(room => {
+                const roomDiv = document.createElement('div');
+                roomDiv.className = 'col-md-6 mb-3';
+                roomDiv.innerHTML = `
+                    <div class="voice-room">
+                        <h5>${room.name}</h5>
+                        <p class="mb-2">Participants: ${room.participants.length}</p>
+                        <button class="btn btn-primary join-room" data-room-id="${room.id}">
+                            <i class="fas fa-headphones"></i> Join Room
+                        </button>
+                    </div>
+                `;
+                voiceRooms.appendChild(roomDiv);
+            });
+        });
+
+        // Handle joining a room
+        voiceRooms.addEventListener('click', function(e) {
+            if (e.target.classList.contains('join-room')) {
+                const roomId = e.target.dataset.roomId;
+                socket.emit('join_voice_room', {
+                    room_id: roomId,
+                    username: '{{ current_user.username }}'
+                });
+                voiceRoomModal.show();
+            }
+        });
+
+        // Handle leaving a room
+        document.getElementById('leave-btn').addEventListener('click', function() {
+            socket.emit('leave_voice_room');
+            voiceRoomModal.hide();
+        });
+
+        // Handle mute button
+        document.getElementById('mute-btn').addEventListener('click', function() {
+            const isMuted = this.classList.contains('active');
+            this.classList.toggle('active');
+            this.innerHTML = isMuted ? 
+                '<i class="fas fa-microphone-slash"></i> Mute' : 
+                '<i class="fas fa-microphone"></i> Unmute';
+            socket.emit('toggle_mute', { muted: !isMuted });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %} 

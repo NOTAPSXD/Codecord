@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Admin Dashboard</h1>
+    </div>
+</div>
+
+<!-- System Stats -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card hover-glow">
+            <div class="card-body">
+                <h5 class="card-title">Total Users</h5>
+                <h2 class="display-4">{{ system_stats.total_users }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card hover-glow">
+            <div class="card-body">
+                <h5 class="card-title">Online Users</h5>
+                <h2 class="display-4">{{ system_stats.online_users }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card hover-glow">
+            <div class="card-body">
+                <h5 class="card-title">Total Projects</h5>
+                <h2 class="display-4">{{ system_stats.total_projects }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card hover-glow">
+            <div class="card-body">
+                <h5 class="card-title">Active Voice Rooms</h5>
+                <h2 class="display-4">{{ system_stats.active_voice_rooms }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Quick Actions</h5>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('admin.manage_users') }}" class="btn btn-primary">Manage Users</a>
+                    <a href="{{ url_for('admin.manage_projects') }}" class="btn btn-primary">Manage Projects</a>
+                    <a href="{{ url_for('admin.manage_categories') }}" class="btn btn-primary">Manage Categories</a>
+                    <a href="{{ url_for('admin.manage_tickets') }}" class="btn btn-primary">View Tickets</a>
+                    <a href="{{ url_for('admin.analytics_dashboard') }}" class="btn btn-primary">Analytics</a>
+                    <a href="{{ url_for('admin.view_logs') }}" class="btn btn-primary">View Logs</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Recent Activity</h5>
+                <div class="table-responsive">
+                    <table class="table table-dark">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for action in recent_actions|reverse %}
+                            <tr>
+                                <td>{{ action.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td>{{ action.user_id }}</td>
+                                <td>{{ action.action }}</td>
+                                <td>{{ action.details|tojson }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh dashboard every 30 seconds
+    setInterval(() => {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %} 
