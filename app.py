@@ -34,6 +34,20 @@ ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin123')
 ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@codexverse.com')
 
+# Add this function to create admin user if not exists
+def create_admin_user():
+    admin_exists = mongo.db.users.find_one({'role': 'admin'})
+    if not admin_exists:
+        admin_data = {
+            'username': ADMIN_USERNAME,
+            'email': ADMIN_EMAIL,
+            'password_hash': generate_password_hash(ADMIN_PASSWORD),
+            'role': 'admin',
+            'created_at': datetime.utcnow()
+        }
+        mongo.db.users.insert_one(admin_data)
+        print("Admin user created successfully!")
+
 try:
     mongo = PyMongo(app)
     # Test the connection
@@ -240,20 +254,6 @@ def handle_leave_voice(data):
         'user': current_user.username,
         'room': room
     }, room=room)
-
-# Add this function to create admin user if not exists
-def create_admin_user():
-    admin_exists = mongo.db.users.find_one({'role': 'admin'})
-    if not admin_exists:
-        admin_data = {
-            'username': ADMIN_USERNAME,
-            'email': ADMIN_EMAIL,
-            'password_hash': generate_password_hash(ADMIN_PASSWORD),
-            'role': 'admin',
-            'created_at': datetime.utcnow()
-        }
-        mongo.db.users.insert_one(admin_data)
-        print("Admin user created successfully!")
 
 # Main entry
 if __name__ == "__main__":
