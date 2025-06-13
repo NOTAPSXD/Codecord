@@ -18,15 +18,15 @@ os.makedirs('static/uploads/projects', exist_ok=True)
 os.makedirs('static/uploads/profiles', exist_ok=True)
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///db/codexverse.db')
+app.config['SECRET_KEY'] = 'ansh234anshwewe'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db/codexverse.db'
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Admin configuration
-ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin123')
-ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@codexverse.com')
+ADMIN_USERNAME = 'admin'
+ADMIN_PASSWORD = 'admin123'
+ADMIN_EMAIL = 'admin@codexverse.com'
 
 db = SQLAlchemy(app)
 socketio = SocketIO(app)
@@ -90,27 +90,27 @@ def register():
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
-        
+
         if User.query.filter_by(username=username).first():
             flash('Username already exists')
             return redirect(url_for('register'))
-            
+
         if User.query.filter_by(email=email).first():
             flash('Email already registered')
             return redirect(url_for('register'))
-            
+
         user = User(
             username=username,
             email=email,
             password_hash=generate_password_hash(password)
         )
-        
+
         db.session.add(user)
         db.session.commit()
-        
+
         flash('Registration successful!')
         return redirect(url_for('login'))
-        
+
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -118,15 +118,15 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        
+
         user = User.query.filter_by(username=username).first()
-        
+
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
             return redirect(url_for('index'))
-            
+
         flash('Invalid username or password')
-        
+
     return render_template('login.html')
 
 @app.route('/logout')
@@ -195,26 +195,27 @@ def handle_leave_voice(data):
 
 # Create default admin user if none exists
 def create_default_admin():
-    with app.app_context():
-        admin = User.query.filter_by(role='admin').first()
-        if not admin:
-            admin = User(
-                username=ADMIN_USERNAME,
-                email=ADMIN_EMAIL,
-                password_hash=generate_password_hash(ADMIN_PASSWORD),
-                role='admin'
-            )
-            db.session.add(admin)
-            db.session.commit()
-            print('Default admin user created!')
-            print(f'Username: {ADMIN_USERNAME}')
-            print(f'Password: {ADMIN_PASSWORD}')
-            print(f'Email: {ADMIN_EMAIL}')
+    admin = User.query.filter_by(role='admin').first()
+    if not admin:
+        admin = User(
+            username=ADMIN_USERNAME,
+            email=ADMIN_EMAIL,
+            password_hash=generate_password_hash(ADMIN_PASSWORD),
+            role='admin'
+        )
+        db.session.add(admin)
+        db.session.commit()
+        print('Default admin user created!')
+        print(f'Username: {ADMIN_USERNAME}')
+        print(f'Password: {ADMIN_PASSWORD}')
+        print(f'Email: {ADMIN_EMAIL}')
 
+# Main entry
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 10000))
-    # Create default admin user
-    create_default_admin()
-    # For Render, bind to 0.0.0.0 and use the PORT env var
-    socketio.run(app, host="0.0.0.0", port=port) 
+
+    with app.app_context():
+        db.create_all()         # Create tables if not already created
+        create_default_admin()  # Create default admin if none
+
+    socketio.run(app, host="0.0.0.0", port=port)
