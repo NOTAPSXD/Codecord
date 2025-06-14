@@ -172,8 +172,8 @@ def login():
             if check_password_hash(user_data['password_hash'], password):
                 print("Password correct, logging in user")
                 user = User(user_data)
-            login_user(user)
-            return redirect(url_for('index'))
+                login_user(user)
+                return redirect(url_for('index'))
             else:
                 print("Password incorrect")
         else:
