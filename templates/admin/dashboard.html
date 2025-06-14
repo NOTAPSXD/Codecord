@@ -1,97 +1,155 @@
 {% extends "base.html" %}
 
-{% block title %}Admin Dashboard{% endblock %}
+{% block title %}Admin Dashboard - Codecord{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        background-color: var(--secondary-color);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .stat-card i {
+        font-size: 2em;
+        margin-bottom: 10px;
+        color: var(--primary-color);
+    }
+
+    .stat-card .stat-value {
+        font-size: 2em;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+
+    .stat-card .stat-label {
+        color: rgba(255,255,255,0.6);
+    }
+
+    .activity-card {
+        background-color: var(--secondary-color);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .activity-card h3 {
+        margin-bottom: 20px;
+        color: var(--text-color);
+    }
+
+    .activity-item {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+    }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .activity-meta {
+        font-size: 0.9em;
+        color: rgba(255,255,255,0.6);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h1 class="mb-4">Admin Dashboard</h1>
-    </div>
-</div>
+<div class="container">
+    <h1 class="mb-4">Admin Dashboard</h1>
 
-<!-- System Stats -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card hover-glow">
-            <div class="card-body">
-                <h5 class="card-title">Total Users</h5>
-                <h2 class="display-4">{{ system_stats.total_users }}</h2>
+    <div class="row">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <i class="fas fa-users"></i>
+                <div class="stat-value">{{ total_users }}</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <i class="fas fa-ticket-alt"></i>
+                <div class="stat-value">{{ total_tickets }}</div>
+                <div class="stat-label">Total Tickets</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <i class="fas fa-exclamation-circle"></i>
+                <div class="stat-value">{{ open_tickets }}</div>
+                <div class="stat-label">Open Tickets</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <i class="fas fa-project-diagram"></i>
+                <div class="stat-value">{{ total_projects }}</div>
+                <div class="stat-label">Total Projects</div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card hover-glow">
-            <div class="card-body">
-                <h5 class="card-title">Online Users</h5>
-                <h2 class="display-4">{{ system_stats.online_users }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card hover-glow">
-            <div class="card-body">
-                <h5 class="card-title">Total Projects</h5>
-                <h2 class="display-4">{{ system_stats.total_projects }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card hover-glow">
-            <div class="card-body">
-                <h5 class="card-title">Active Voice Rooms</h5>
-                <h2 class="display-4">{{ system_stats.active_voice_rooms }}</h2>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Quick Actions -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Quick Actions</h5>
-                <div class="d-flex gap-2">
-                    <a href="{{ url_for('admin.manage_users') }}" class="btn btn-primary">Manage Users</a>
-                    <a href="{{ url_for('admin.manage_projects') }}" class="btn btn-primary">Manage Projects</a>
-                    <a href="{{ url_for('admin.manage_categories') }}" class="btn btn-primary">Manage Categories</a>
-                    <a href="{{ url_for('admin.manage_tickets') }}" class="btn btn-primary">View Tickets</a>
-                    <a href="{{ url_for('admin.analytics_dashboard') }}" class="btn btn-primary">Analytics</a>
-                    <a href="{{ url_for('admin.view_logs') }}" class="btn btn-primary">View Logs</a>
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="activity-card">
+                <h3>Recent Tickets</h3>
+                {% for ticket in recent_tickets %}
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-ticket-alt"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">{{ ticket.title }}</div>
+                        <div class="activity-meta">
+                            <span class="badge bg-{{ ticket.status }}">{{ ticket.status|title }}</span>
+                            <span class="ms-2">{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                    </div>
                 </div>
+                {% endfor %}
             </div>
         </div>
-    </div>
-</div>
-
-<!-- Recent Activity -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Recent Activity</h5>
-                <div class="table-responsive">
-                    <table class="table table-dark">
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>User</th>
-                                <th>Action</th>
-                                <th>Details</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for action in recent_actions|reverse %}
-                            <tr>
-                                <td>{{ action.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                                <td>{{ action.user_id }}</td>
-                                <td>{{ action.action }}</td>
-                                <td>{{ action.details|tojson }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+        <div class="col-md-6">
+            <div class="activity-card">
+                <h3>Recent Users</h3>
+                {% for user in recent_users %}
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">{{ user.username }}</div>
+                        <div class="activity-meta">
+                            <span class="badge bg-{{ user.role }}">{{ user.role|title }}</span>
+                            <span class="ms-2">{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                    </div>
                 </div>
+                {% endfor %}
             </div>
         </div>
     </div>

@@ -172,8 +172,8 @@ def login():
             if check_password_hash(user_data['password_hash'], password):
                 print("Password correct, logging in user")
                 user = User(user_data)
-                login_user(user)
-                return redirect(url_for('index'))
+            login_user(user)
+            return redirect(url_for('index'))
             else:
                 print("Password incorrect")
         else:
@@ -200,9 +200,12 @@ def voice():
     return render_template('voice.html')
 
 @app.route('/projects')
+@login_required
 def projects():
-    categories = list(mongo.db.categories.find())
-    return render_template('projects.html', categories=categories)
+    # Get projects from database
+    projects = list(mongo.db.projects.find())
+    categories = mongo.db.projects.distinct('category')
+    return render_template('projects.html', projects=projects, categories=categories)
 
 @app.route('/project/<project_id>')
 def project_detail(project_id):
@@ -214,16 +217,98 @@ def project_detail(project_id):
 @app.route('/tickets')
 @login_required
 def tickets():
-    user_tickets = list(mongo.db.tickets.find({'user_id': current_user.id}))
-    return render_template('tickets.html', tickets=user_tickets)
+    # Get tickets from database
+    tickets = list(mongo.db.tickets.find())
+    return render_template('tickets.html', tickets=tickets)
+
+@app.route('/tickets/new', methods=['GET', 'POST'])
+@login_required
+def new_ticket():
+    if request.method == 'POST':
+        ticket = {
+            'title': request.form.get('title'),
+            'description': request.form.get('description'),
+            'priority': request.form.get('priority'),
+            'status': 'open',
+            'author': current_user.username,
+            'created_at': datetime.utcnow()
+        }
+        mongo.db.tickets.insert_one(ticket)
+        flash('Ticket created successfully!', 'success')
+        return redirect(url_for('tickets'))
+    return render_template('new_ticket.html')
+
+@app.route('/tickets/<ticket_id>')
+@login_required
+def view_ticket(ticket_id):
+    ticket = mongo.db.tickets.find_one({'_id': ObjectId(ticket_id)})
+    if not ticket:
+        flash('Ticket not found!', 'error')
+        return redirect(url_for('tickets'))
+    return render_template('view_ticket.html', ticket=ticket)
+
+@app.route('/tickets/<ticket_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_ticket(ticket_id):
+    if current_user.role != 'admin':
+        flash('You do not have permission to edit tickets!', 'error')
+        return redirect(url_for('tickets'))
+    
+    ticket = mongo.db.tickets.find_one({'_id': ObjectId(ticket_id)})
+    if not ticket:
+        flash('Ticket not found!', 'error')
+        return redirect(url_for('tickets'))
+
+    if request.method == 'POST':
+        mongo.db.tickets.update_one(
+            {'_id': ObjectId(ticket_id)},
+            {'$set': {
+                'title': request.form.get('title'),
+                'description': request.form.get('description'),
+                'priority': request.form.get('priority'),
+                'status': request.form.get('status')
+            }}
+        )
+        flash('Ticket updated successfully!', 'success')
+        return redirect(url_for('tickets'))
+    
+    return render_template('edit_ticket.html', ticket=ticket)
+
+@app.route('/tickets/<ticket_id>', methods=['DELETE'])
+@login_required
+def delete_ticket(ticket_id):
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    result = mongo.db.tickets.delete_one({'_id': ObjectId(ticket_id)})
+    if result.deleted_count:
+        return jsonify({'message': 'Ticket deleted successfully'}), 200
+    return jsonify({'error': 'Ticket not found'}), 404
 
 @app.route('/admin/dashboard')
 @login_required
 def admin_dashboard():
     if current_user.role != 'admin':
-        flash('You do not have permission to access the admin dashboard.')
+        flash('You do not have permission to access the admin dashboard.', 'error')
         return redirect(url_for('index'))
-    return render_template('admin_dashboard.html')
+    
+    # Get statistics for admin dashboard
+    total_users = mongo.db.users.count_documents({})
+    total_tickets = mongo.db.tickets.count_documents({})
+    open_tickets = mongo.db.tickets.count_documents({'status': 'open'})
+    total_projects = mongo.db.projects.count_documents({})
+    
+    # Get recent activity
+    recent_tickets = list(mongo.db.tickets.find().sort('created_at', -1).limit(5))
+    recent_users = list(mongo.db.users.find().sort('created_at', -1).limit(5))
+    
+    return render_template('admin/dashboard.html',
+                         total_users=total_users,
+                         total_tickets=total_tickets,
+                         open_tickets=open_tickets,
+                         total_projects=total_projects,
+                         recent_tickets=recent_tickets,
+                         recent_users=recent_users)
 
 # Socket.IO events
 @socketio.on('connect')

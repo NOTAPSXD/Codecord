@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Projects - Codecord{% endblock %}
+
+{% block extra_css %}
+<style>
+    .project-card {
+        background-color: var(--secondary-color);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: transform 0.2s;
+    }
+
+    .project-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .project-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .project-title {
+        font-size: 1.5em;
+        font-weight: bold;
+        color: var(--text-color);
+    }
+
+    .project-category {
+        background-color: var(--primary-color);
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.9em;
+    }
+
+    .project-description {
+        color: rgba(255,255,255,0.8);
+        margin-bottom: 15px;
+    }
+
+    .project-meta {
+        display: flex;
+        justify-content: space-between;
+        color: rgba(255,255,255,0.6);
+        font-size: 0.9em;
+    }
+
+    .project-stats {
+        display: flex;
+        gap: 15px;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .filters {
+        background-color: var(--secondary-color);
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Projects</h1>
+
+    <div class="filters">
+        <div class="row">
+            <div class="col-md-4">
+                <select class="form-select" id="category-filter">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                    <option value="{{ category }}">{{ category }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <input type="text" class="form-control" id="search-input" placeholder="Search projects...">
+            </div>
+            <div class="col-md-4">
+                <select class="form-select" id="sort-filter">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="popular">Most Popular</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" id="projects-container">
+        {% for project in projects %}
+        <div class="col-md-6 col-lg-4">
+            <div class="project-card">
+                <div class="project-header">
+                    <h3 class="project-title">{{ project.title }}</h3>
+                    <span class="project-category">{{ project.category }}</span>
+                </div>
+                <p class="project-description">{{ project.description }}</p>
+                <div class="project-meta">
+                    <div class="project-stats">
+                        <span class="stat-item">
+                            <i class="fas fa-eye"></i> {{ project.views }}
+                        </span>
+                        <span class="stat-item">
+                            <i class="fas fa-star"></i> {{ project.likes }}
+                        </span>
+                        <span class="stat-item">
+                            <i class="fas fa-code-branch"></i> {{ project.forks }}
+                        </span>
+                    </div>
+                    <span class="project-date">{{ project.created_at.strftime('%Y-%m-%d') }}</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const categoryFilter = document.getElementById('category-filter');
+        const searchInput = document.getElementById('search-input');
+        const sortFilter = document.getElementById('sort-filter');
+        const projectsContainer = document.getElementById('projects-container');
+
+        function filterProjects() {
+            const category = categoryFilter.value;
+            const search = searchInput.value.toLowerCase();
+            const sort = sortFilter.value;
+
+            // Get all project cards
+            const projects = Array.from(projectsContainer.getElementsByClassName('project-card'));
+
+            // Filter projects
+            projects.forEach(project => {
+                const projectCategory = project.querySelector('.project-category').textContent;
+                const projectTitle = project.querySelector('.project-title').textContent.toLowerCase();
+                const projectDescription = project.querySelector('.project-description').textContent.toLowerCase();
+
+                const matchesCategory = !category || projectCategory === category;
+                const matchesSearch = !search || 
+                    projectTitle.includes(search) || 
+                    projectDescription.includes(search);
+
+                project.style.display = matchesCategory && matchesSearch ? 'block' : 'none';
+            });
+
+            // Sort projects
+            const visibleProjects = projects.filter(p => p.style.display !== 'none');
+            visibleProjects.sort((a, b) => {
+                const dateA = new Date(a.querySelector('.project-date').textContent);
+                const dateB = new Date(b.querySelector('.project-date').textContent);
+                
+                if (sort === 'newest') return dateB - dateA;
+                if (sort === 'oldest') return dateA - dateB;
+                if (sort === 'popular') {
+                    const likesA = parseInt(a.querySelector('.stat-item:nth-child(2)').textContent);
+                    const likesB = parseInt(b.querySelector('.stat-item:nth-child(2)').textContent);
+                    return likesB - likesA;
+                }
+                return 0;
+            });
+
+            // Reorder projects in the container
+            visibleProjects.forEach(project => {
+                projectsContainer.appendChild(project);
+            });
+        }
+
+        categoryFilter.addEventListener('change', filterProjects);
+        searchInput.addEventListener('input', filterProjects);
+        sortFilter.addEventListener('change', filterProjects);
+    });
+</script>
+{% endblock %} 
